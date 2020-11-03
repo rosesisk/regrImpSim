@@ -1,0 +1,82 @@
+---
+title: "Regression Imputation vs Multiple Imputation for handling missing data in prediction: a simulation study"
+author: "Rose Sisk"
+date: "07/07/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(here)
+library(tidyverse)
+```
+
+## Background
+Clinical Prediction Models (CPMs) can be used to guide clinical decision making and facilitate conversations about risk between care providers and patients. A CPM is a mathematical tool that takes patient and clinical information as inputs and produces an estimated risk that a patient currently has or will develop a condition of interest. Developing and validating these models is a data-hungry process which typically requires longitudinal follow-up of a large cohort of individuals. 
+
+Clinical Prediction Models (CPMs) can be used to guide clinical decision making and facilitate conversations about risk between care providers and patients. A CPM is a mathematical tool that takes patient and clinical information as inputs and produces an estimated risk that a patient currently has or will develop a condition of interest. Developing and validating these models is a data-hungry process which typically requires longitudinal follow-up of a large cohort of individuals. 
+
+Multiple imputation (MI) is often cited as the gold standard in handling missing data for both causal estimation studies and prediction2. There are, however, practical limitations to this approach which make it difficult to use at prediction time. Ideally, the user would have access to the original development data in order to use multiple imputation at prediction time, which is unlikely to be the case if the model is to be used by a group other than the one that developed it. MI also comes with a considerable computational cost, which makes it difficult to incorporate into mobile/web applications or EHR systems. Regression imputation may offer a promising alternative in terms of practicality, as only the imputation model needs to be stored alongside the full prediction model. 
+
+This study therefore aims to compare regression imputation with multiple imputation in the context of prediction, varying the number of imputations for the latter. We also explore the effect of omitting/including the outcome from each imputation model. We consider a range of different missingness mechanisms covering MCAR, MAR and MNAR, and aim to provide guidelines dictating how and when each method should be used when the primary goal is prediction.
+
+## Aims
+To compare regression imputation against multiple imputation in imputing missing data when the primary goal is prediction, under a range of missing data mechanisms (MCAR, MAR, MNAR), and with/without a missing indicator.
+
+## Data-generating mechanisms
+For simplicity, we focus on a logistic regression-based CPM with a binary outcome, $Y$ which is observed for all individuals. The model contains two predictors, $X_{1}$ and $X_{2}$, where $X_{1}$ is informatively and partially observed. We denote missingness in $X_{1}$ with binary indicator $R_{1}$.
+
+$$X_{1} \sim N(0, 1)$$
+$$X_{2} \sim N(0, 1)$$
+$R_1 \in \{0,1\}$ 
+
+$$P[R_1 = 1] = expit(\beta_0 + \beta_{X_1} + \beta_{X_2})$$ i.e. missingness in $X_1$ can depend on $X_1$, and/or $X_2$.
+$Y$ is binary, with $$P[Y = 1] = expit(\gamma_0 + \gamma_{X_1}X_1 + \gamma_{X_2}X_2 + \gamma_{X_1X_2})$$
+
+##Target and Performance Measures
+Our key target is predictive performance, and therefore we have selected measures of predictive accuracy, calibration and discrimination as our performance measures:
+
+•	Calibration in the large 
+•	Calibration slope
+•	Discrimination (c-statistic)
+•	Brier score
+
+As a secondary measure we consider computational time of both model fitting and producing predictions.
+
+## Methods
+First generate data under the DGMs described in the previous sections. We will then take a split-sample approach to assessing model performance (we recognise that this is statistically inefficient, however in the interests of time/computational speed cross-validation is not feasible ). Randomly separate the data into 50% training and 50% testing  , fitting the models on the training data and calculating performance measures on the derived models applied to the testing set.
+
+###Analytical methods for handling missing data
+•	Complete case analysis   
+•	Multiple imputation – vary number of imputed datasets, m = 3, 5, 10, 20, 30, 50, 100 
+  o	With Y  in imputation model (development and validation )
+  o	Without Y in imputation model (development and validation)
+  o	With Y in imputation model at development, but not at validation
+•	Regression imputation 
+  o	With Y in imputation model (development and validation)
+  o	Without Y in imputation model (development and validation)
+  o	With Y in imputation model at development, but not at validation
+
+### Outcome Model
+•	Include missing indicator v not (it seemed to help for causal estimation in the MNAR cases)
+
+```{r results, include=FALSE}
+res <- readRDS(here("Outputs", "combinedResults.RDS"))
+res_subs <- res %>%
+  filter(((beta_X1 == 1.1 | beta_X1 == 0) & 
+           (beta_X2 == 1.1 | beta_X2 == 0) &
+           gamma_X1 == 1 &
+           gamma_X2 == 1 &
+           gamma_X1X2 == 0) & (pi_R1 == 0.5 | pi_R1 == 0.1))
+
+
+```
+
+## Results
+
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
